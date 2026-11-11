@@ -70,6 +70,21 @@ body.playing .lookup, body.playing .settings, body.playing .tip { display: none;
 
 .field-label { display: block; margin-bottom: 8px; font-size: 0.78rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--paper-dim); }
 
+.modes .seg { grid-template-columns: repeat(2, 1fr); }
+body.playing .modes, body.playing .draw { display: none; }
+body[data-mode="sortear"] .lookup { display: none; }
+body[data-mode="fichas"] .draw { display: none; }
+.draw { display: flex; flex-direction: column; gap: 10px; }
+.draw-btn { height: 68px; border: 0; border-radius: 14px; background: var(--blue); color: #ffffff; font: 700 1.2rem var(--font-body); cursor: pointer; }
+.draw-btn:hover { background: var(--blue-hover); }
+.draw-btn:focus-visible { outline: 3px solid #ffffff; outline-offset: 3px; }
+.draw-btn:active { transform: scale(0.98); }
+.draw-btn:disabled { opacity: 0.7; cursor: default; transform: none; }
+.draw-info { display: flex; align-items: center; justify-content: space-between; gap: 12px; color: var(--paper-dim); font-size: 0.9rem; font-variant-numeric: tabular-nums; }
+.link-btn { flex: none; border: 0; background: transparent; color: var(--blue-hover); font: 600 0.9rem var(--font-body); text-decoration: underline; text-underline-offset: 3px; padding: 12px 4px; margin: -12px -4px; cursor: pointer; }
+.link-btn:focus-visible { outline: 3px solid #ffffff; outline-offset: 2px; border-radius: 4px; }
+.card.idle .big.rolling { font-family: var(--font-mono); color: var(--paper); }
+
 .tile { display: flex; height: 68px; border: 2px solid var(--paper); border-radius: 14px; overflow: hidden; }
 .tile:focus-within { border-color: var(--blue); }
 .tile input {
@@ -168,7 +183,7 @@ body.playing .lookup, body.playing .settings, body.playing .tip { display: none;
 }
 </style>
 </head>
-<body>
+<body data-mode="fichas">
 <main class="app">
   <header class="brand">
     <div class="mark" aria-hidden="true">?</div>
@@ -179,6 +194,13 @@ body.playing .lookup, body.playing .settings, body.playing .tip { display: none;
     <button type="button" class="swap" id="swapBtn" hidden>Trocar ficha</button>
   </header>
 
+  <div class="modes">
+    <div class="seg" role="radiogroup" aria-label="Modo de jogo">
+      <label><input type="radio" name="mode" value="fichas" checked><span>Com fichas</span></label>
+      <label><input type="radio" name="mode" value="sortear"><span>Sortear</span></label>
+    </div>
+  </div>
+
   <form id="lookup" class="lookup" novalidate>
     <label class="field-label" for="num">Número da ficha</label>
     <div class="tile">
@@ -187,6 +209,14 @@ body.playing .lookup, body.playing .settings, body.playing .tip { display: none;
     </div>
     <p class="err" id="err" role="alert" hidden></p>
   </form>
+
+  <div class="draw" id="draw">
+    <button type="button" class="draw-btn" id="drawBtn">Sortear pergunta</button>
+    <div class="draw-info">
+      <span id="remaining"></span>
+      <button type="button" class="link-btn" id="resetDraw">Zerar sorteio</button>
+    </div>
+  </div>
 
   <div class="settings" id="settings">
     <span class="field-label" id="durLabel">Tempo para responder</span>
@@ -201,8 +231,8 @@ body.playing .lookup, body.playing .settings, body.playing .tip { display: none;
 
   <section aria-label="Ficha">
     <div id="idle" class="card idle">
-      <div class="big" aria-hidden="true">?</div>
-      <p>Digite o número que está na ficha para ver a pergunta. O tempo começa na hora.</p>
+      <div class="big" id="bigMark" aria-hidden="true">?</div>
+      <p id="idleText">Digite o número que está na ficha para ver a pergunta. O tempo começa na hora.</p>
     </div>
 
     <article id="face" class="card face" hidden>
@@ -303,6 +333,9 @@ body.playing .lookup, body.playing .settings, body.playing .tip { display: none;
   var st = { mode: 'idle', total: 0, endAt: 0, left: 0, timer: null, idx: 0 };
   var actx = null;
   var wake = null;
+  var mode = 'fichas';
+  var used = [];
+  var rolling = false;
 
   $('total').textContent = QUESTIONS.length;
   $('feedback').checked = feedbackOn;
@@ -424,6 +457,8 @@ body.playing .lookup, body.playing .settings, body.playing .tip { display: none;
     $('revealBtn').hidden = false;
     $('nextBtn').hidden = true;
     $('swapBtn').hidden = false;
+    $('swapBtn').textContent = mode === 'sortear' ? 'Voltar' : 'Trocar ficha';
+    $('nextBtn').textContent = mode === 'sortear' ? 'Sortear outra' : 'Nova ficha';
     setPlaying(true);
     keepAwake(true);
     $('live').textContent = 'Ficha ' + n + ', ' + item.cat + '. ' + item.q;
@@ -432,7 +467,34 @@ body.playing .lookup, body.playing .settings, body.playing .tip { display: none;
     st.timer = setInterval(tick, 100);
   }
 
-  function reset() {
+  function pad(n) { return n < 10 ? '0' + n : String(n); }
+
+  function refreshIdleText() {
+    $('idleText').textContent = mode === 'sortear'
+      ? 'Toque em Sortear pergunta para tirar uma ao acaso. Nenhuma se repete até acabarem.'
+      : 'Digite o número que está na ficha para ver a pergunta. O tempo começa na hora.';
+  }
+
+  function updateRemaining() {
+    $('remaining').textContent = 'Restam ' + (QUESTIONS.length - used.length) + ' de ' + QUESTIONS.length + ' perguntas';
+  }
+
+  function saveUsed() {
+    try { localStorage.setItem('dq-used', JSON.stringify(used)); } catch (e) {}
+  }
+
+  function setMode(m) {
+    mode = (m === 'sortear') ? 'sortear' : 'fichas';
+    document.body.setAttribute('data-mode', mode);
+    Array.prototype.forEach.call(document.querySelectorAll('input[name="mode"]'), function (r) {
+      r.checked = (r.value === mode);
+    });
+    try { localStorage.setItem('dq-mode', mode); } catch (e) {}
+    clearError();
+    refreshIdleText();
+  }
+
+  function showIdle() {
     stopTimer();
     st.mode = 'idle';
     $('face').hidden = true;
@@ -442,9 +504,68 @@ body.playing .lookup, body.playing .settings, body.playing .tip { display: none;
     setPlaying(false);
     keepAwake(false);
     clearError();
+  }
+
+  function resetBig() {
+    $('bigMark').textContent = '?';
+    $('bigMark').classList.remove('rolling');
+  }
+
+  function reset() {
+    showIdle();
+    resetBig();
+    refreshIdleText();
+    updateRemaining();
     $('num').value = '';
     window.scrollTo(0, 0);
-    $('num').focus();
+    if (mode === 'fichas') $('num').focus();
+  }
+
+  function pickNext() {
+    var pool = [];
+    var i;
+    for (i = 0; i < QUESTIONS.length; i++) if (used.indexOf(i) === -1) pool.push(i);
+    var renewed = false;
+    if (!pool.length) {
+      used = [];
+      renewed = true;
+      for (i = 0; i < QUESTIONS.length; i++) pool.push(i);
+    }
+    var pick = pool[Math.floor(Math.random() * pool.length)];
+    used.push(pick);
+    saveUsed();
+    updateRemaining();
+    return { n: pick + 1, renewed: renewed };
+  }
+
+  function draw() {
+    if (rolling) return;
+    unlockAudio();
+    var res = pickNext();
+    var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduce) { openCard(res.n); return; }
+    rolling = true;
+    showIdle();
+    $('drawBtn').disabled = true;
+    var big = $('bigMark');
+    big.classList.add('rolling');
+    if (res.renewed) $('idleText').textContent = 'Todas as perguntas já saíram. Embaralhando de novo.';
+    var elapsed = 0;
+    var spin = setInterval(function () {
+      big.textContent = pad(1 + Math.floor(Math.random() * QUESTIONS.length));
+      elapsed += 70;
+      if (elapsed >= 700) {
+        clearInterval(spin);
+        big.textContent = pad(res.n);
+        setTimeout(function () {
+          rolling = false;
+          $('drawBtn').disabled = false;
+          resetBig();
+          refreshIdleText();
+          openCard(res.n);
+        }, 300);
+      }
+    }, 70);
   }
 
   $('lookup').addEventListener('submit', function (e) {
@@ -481,8 +602,31 @@ body.playing .lookup, body.playing .settings, body.playing .tip { display: none;
   });
 
   $('revealBtn').addEventListener('click', function () { finish('manual'); });
-  $('nextBtn').addEventListener('click', reset);
+  $('nextBtn').addEventListener('click', function () {
+    if (mode === 'sortear') draw(); else reset();
+  });
   $('swapBtn').addEventListener('click', reset);
+  $('drawBtn').addEventListener('click', draw);
+  $('resetDraw').addEventListener('click', function () {
+    used = [];
+    saveUsed();
+    updateRemaining();
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('input[name="mode"]'), function (r) {
+    r.addEventListener('change', function () { if (r.checked) setMode(r.value); });
+  });
+
+  try {
+    var savedUsed = JSON.parse(localStorage.getItem('dq-used') || '[]');
+    if (Array.isArray(savedUsed)) {
+      used = savedUsed.filter(function (v, i, a) {
+        return typeof v === 'number' && v >= 0 && v < QUESTIONS.length && a.indexOf(v) === i;
+      });
+    }
+    if (localStorage.getItem('dq-mode') === 'sortear') mode = 'sortear';
+  } catch (e) {}
+  setMode(mode);
+  updateRemaining();
 })();
 </script>
 </body>
