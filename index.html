@@ -70,6 +70,16 @@ body.playing .lookup, body.playing .settings, body.playing .tip { display: none;
 
 .field-label { display: block; margin-bottom: 8px; font-size: 0.78rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--paper-dim); }
 
+.tabs { display: grid; grid-template-columns: 1fr 1fr; border-bottom: 1.5px solid var(--line); }
+.tabs label { position: relative; display: block; }
+.tabs input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.tabs span { display: grid; place-items: center; min-height: 52px; margin-bottom: -1.5px; border-bottom: 4px solid transparent; color: var(--paper-dim); font: 600 1.05rem var(--font-body); cursor: pointer; }
+.tabs input:checked + span { color: var(--paper); border-bottom-color: var(--blue); }
+body[data-tab="desafios"] .tabs input:checked + span { border-bottom-color: var(--red); }
+.tabs input:focus-visible + span { outline: 2px solid var(--paper); outline-offset: -2px; }
+body.playing .tabs { display: none; }
+.dur-box { display: flex; flex-direction: column; gap: 10px; }
+.fixed-time { margin: 0; padding: 12px 14px; border: 1.5px solid var(--line); border-radius: 12px; color: var(--paper-dim); font-size: 1rem; }
 .modes .seg { grid-template-columns: repeat(2, 1fr); }
 body.playing .modes, body.playing .draw { display: none; }
 body[data-mode="sortear"] .lookup { display: none; }
@@ -138,6 +148,8 @@ body[data-mode="fichas"] .draw { display: none; }
 .swap:focus-visible { outline: 3px solid #ffffff; outline-offset: 2px; border-radius: 4px; }
 .question { margin: 0; font: 600 clamp(1.5rem, 6.8vw, 2rem)/1.2 var(--font-display); letter-spacing: -0.01em; text-wrap: balance; overflow-wrap: anywhere; }
 
+.question { white-space: pre-line; }
+.question.longword { font-size: clamp(1.15rem, 5.6vw, 1.7rem); }
 .timer { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 16px; }
 .digits { font: 700 3.8rem/1 var(--font-mono); font-variant-numeric: tabular-nums; min-width: 2.3ch; text-align: right; }
 .digits small { font-size: 1.2rem; margin-left: 2px; color: var(--paper-ink-2); }
@@ -183,16 +195,21 @@ body[data-mode="fichas"] .draw { display: none; }
 }
 </style>
 </head>
-<body data-mode="fichas">
+<body data-mode="fichas" data-tab="perguntas">
 <main class="app">
   <header class="brand">
     <div class="mark" aria-hidden="true">?</div>
     <div>
       <h1>DominoQuiz</h1>
-      <p>Dominó + conhecimentos gerais. Fichas de 1 a <span id="total">30</span>.</p>
+      <p id="sub">Dominó + conhecimentos gerais. Fichas de 1 a 50.</p>
     </div>
     <button type="button" class="swap" id="swapBtn" hidden>Trocar ficha</button>
   </header>
+
+  <div class="tabs" role="radiogroup" aria-label="Tipo de ficha">
+    <label><input type="radio" name="tab" value="perguntas" checked><span>Perguntas</span></label>
+    <label><input type="radio" name="tab" value="desafios"><span>Desafios</span></label>
+  </div>
 
   <div class="modes">
     <div class="seg" role="radiogroup" aria-label="Modo de jogo">
@@ -219,6 +236,7 @@ body[data-mode="fichas"] .draw { display: none; }
   </div>
 
   <div class="settings" id="settings">
+    <div class="dur-box" id="durBox">
     <span class="field-label" id="durLabel">Tempo para responder</span>
     <div class="seg" role="radiogroup" aria-labelledby="durLabel">
       <label><input type="radio" name="dur" value="20"><span>20 s</span></label>
@@ -226,6 +244,8 @@ body[data-mode="fichas"] .draw { display: none; }
       <label><input type="radio" name="dur" value="45"><span>45 s</span></label>
       <label><input type="radio" name="dur" value="60"><span>60 s</span></label>
     </div>
+    </div>
+    <p class="fixed-time" id="fixedTime" hidden></p>
     <label class="snd"><input type="checkbox" id="feedback" checked><span>Som e vibração no fim</span></label>
   </div>
 
@@ -321,6 +341,31 @@ body[data-mode="fichas"] .draw { display: none; }
     { cat: "Curiosidades", q: "Qual estrela do Pop falava: “AAAuu”?", a: "Michael Jackson" }
   ];
 
+  var CHALLENGES = [
+    { cat: 'Desafio', q: 'Soletre a palavra:\nobrigatoriedade', a: null },
+    { cat: 'Desafio', q: 'Soletre a palavra:\nefervescente', a: null },
+    { cat: 'Desafio', q: 'Soletre a palavra:\ninfraestrutura', a: null },
+    { cat: 'Desafio', q: 'Soletre a palavra:\ninconstitucionalidade', a: null },
+    { cat: 'Desafio', q: 'Cite 7 cores diferentes', a: null },
+    { cat: 'Desafio', q: 'Cite 5 frutas com a inicial “A”', a: null },
+    { cat: 'Desafio', q: 'Cite 5 elementos químicos da tabela periódica', a: null },
+    { cat: 'Desafio', q: 'Cite 10 palavras que começam com a letra “R”', a: null },
+    { cat: 'Desafio', q: 'Cite 5 capitais de países da Europa', a: null },
+    { cat: 'Desafio', q: 'Fale 7 marcas de carro', a: null },
+    { cat: 'Desafio', q: 'Cite 8 países que começam com a letra “M”', a: null },
+    { cat: 'Desafio', q: 'Cite 7 países que começam com a letra “S”', a: null },
+    { cat: 'Desafio', q: 'Cite 10 partes do corpo humano', a: null },
+    { cat: 'Desafio', q: 'Cite 5 estados do Nordeste que começam com a letra “P” ou “A”', a: null },
+    { cat: 'Desafio', q: 'Cite 10 profissões', a: null },
+    { cat: 'Desafio', q: 'Cite os 5 oceanos existentes no mundo', a: null },
+    { cat: 'Desafio', q: 'Fale 8 esportes diferentes', a: null },
+    { cat: 'Desafio', q: 'Fale 8 objetos encontrados em uma cozinha', a: null },
+    { cat: 'Desafio', q: 'Cite 8 animais que vivem na água', a: null },
+    { cat: 'Desafio', q: 'Cite 10 países', a: null }
+  ];
+  var ALL = QUESTIONS.concat(CHALLENGES);
+  var CHALLENGE_SECONDS = 20;
+
   var $ = function (id) { return document.getElementById(id); };
   var duration = 30;
   var feedbackOn = true;
@@ -334,10 +379,10 @@ body[data-mode="fichas"] .draw { display: none; }
   var actx = null;
   var wake = null;
   var mode = 'fichas';
+  var tab = 'perguntas';
   var used = [];
   var rolling = false;
 
-  $('total').textContent = QUESTIONS.length;
   $('feedback').checked = feedbackOn;
   Array.prototype.forEach.call(document.querySelectorAll('input[name="dur"]'), function (r) {
     r.checked = (parseInt(r.value, 10) === duration);
@@ -421,33 +466,42 @@ body[data-mode="fichas"] .draw { display: none; }
 
   function finish(reason) {
     stopTimer();
-    var item = QUESTIONS[st.idx];
+    var item = ALL[st.idx];
+    var challenge = item.a === null;
     st.mode = 'done';
     $('digits').classList.remove('low');
     if (reason === 'time') paint(0);
-    $('answerLabel').textContent = reason === 'time' ? 'Tempo esgotado. A resposta é' : 'A resposta é';
-    $('answerText').textContent = item.a;
+    $('answerLabel').hidden = challenge;
+    if (challenge) {
+      $('answerText').textContent = reason === 'time' ? 'Tempo esgotado!' : 'Desafio encerrado';
+    } else {
+      $('answerLabel').textContent = reason === 'time' ? 'Tempo esgotado. A resposta é' : 'A resposta é';
+      $('answerText').textContent = item.a;
+    }
     $('answerBox').hidden = false;
     $('pauseBtn').hidden = true;
     $('revealBtn').hidden = true;
     $('nextBtn').hidden = false;
     $('swapBtn').hidden = true;
     keepAwake(false);
-    $('live').textContent = (reason === 'time' ? 'Tempo esgotado. ' : '') + 'Resposta: ' + item.a;
+    $('live').textContent = challenge
+      ? (reason === 'time' ? 'Tempo esgotado.' : 'Desafio encerrado.')
+      : (reason === 'time' ? 'Tempo esgotado. ' : '') + 'Resposta: ' + item.a;
     if (reason === 'time') alertEnd();
     window.scrollTo(0, 0);
   }
 
   function openCard(n) {
     stopTimer();
-    var item = QUESTIONS[n - 1];
+    var item = ALL[n - 1];
     st.idx = n - 1;
-    st.total = duration * 1000;
+    st.total = (item.a === null ? CHALLENGE_SECONDS : duration) * 1000;
     st.endAt = performance.now() + st.total;
     st.mode = 'running';
     $('cardNum').textContent = 'Ficha ' + (n < 10 ? '0' + n : n);
     $('chipText').textContent = item.cat;
     $('question').textContent = item.q;
+    $('question').classList.toggle('longword', /\S{16,}/.test(item.q));
     $('answerBox').hidden = true;
     $('idle').hidden = true;
     $('face').hidden = false;
@@ -455,6 +509,7 @@ body[data-mode="fichas"] .draw { display: none; }
     $('pauseBtn').hidden = false;
     $('pauseBtn').textContent = 'Pausar';
     $('revealBtn').hidden = false;
+    $('revealBtn').textContent = item.a === null ? 'Encerrar' : 'Mostrar resposta';
     $('nextBtn').hidden = true;
     $('swapBtn').hidden = false;
     $('swapBtn').textContent = mode === 'sortear' ? 'Voltar' : 'Trocar ficha';
@@ -469,14 +524,29 @@ body[data-mode="fichas"] .draw { display: none; }
 
   function pad(n) { return n < 10 ? '0' + n : String(n); }
 
+  function rangeOf(t) {
+    return t === 'desafios' ? { from: QUESTIONS.length + 1, to: ALL.length } : { from: 1, to: QUESTIONS.length };
+  }
+
   function refreshIdleText() {
-    $('idleText').textContent = mode === 'sortear'
-      ? 'Toque em Sortear pergunta para tirar uma ao acaso. Nenhuma se repete até acabarem.'
-      : 'Digite o número que está na ficha para ver a pergunta. O tempo começa na hora.';
+    var ch = tab === 'desafios';
+    var r = rangeOf(tab);
+    var text;
+    if (mode === 'sortear') {
+      text = ch ? 'Toque em Sortear desafio para tirar um ao acaso. Nenhum se repete até acabarem.'
+                : 'Toque em Sortear pergunta para tirar uma ao acaso. Nenhuma se repete até acabarem.';
+    } else {
+      text = ch ? 'Digite o número do desafio (' + r.from + ' a ' + r.to + '). O tempo começa na hora e são ' + CHALLENGE_SECONDS + ' segundos.'
+                : 'Digite o número que está na ficha para ver a pergunta. O tempo começa na hora.';
+    }
+    $('idleText').textContent = text;
   }
 
   function updateRemaining() {
-    $('remaining').textContent = 'Restam ' + (QUESTIONS.length - used.length) + ' de ' + QUESTIONS.length + ' perguntas';
+    var r = rangeOf(tab);
+    var total = r.to - r.from + 1;
+    var spent = used.filter(function (v) { return v >= r.from - 1 && v <= r.to - 1; }).length;
+    $('remaining').textContent = 'Restam ' + (total - spent) + ' de ' + total + (tab === 'desafios' ? ' desafios' : ' perguntas');
   }
 
   function saveUsed() {
@@ -524,12 +594,13 @@ body[data-mode="fichas"] .draw { display: none; }
   function pickNext() {
     var pool = [];
     var i;
-    for (i = 0; i < QUESTIONS.length; i++) if (used.indexOf(i) === -1) pool.push(i);
+    var r = rangeOf(tab);
+    for (i = r.from - 1; i <= r.to - 1; i++) if (used.indexOf(i) === -1) pool.push(i);
     var renewed = false;
     if (!pool.length) {
-      used = [];
+      used = used.filter(function (v) { return v < r.from - 1 || v > r.to - 1; });
       renewed = true;
-      for (i = 0; i < QUESTIONS.length; i++) pool.push(i);
+      for (i = r.from - 1; i <= r.to - 1; i++) pool.push(i);
     }
     var pick = pool[Math.floor(Math.random() * pool.length)];
     used.push(pick);
@@ -549,10 +620,11 @@ body[data-mode="fichas"] .draw { display: none; }
     $('drawBtn').disabled = true;
     var big = $('bigMark');
     big.classList.add('rolling');
-    if (res.renewed) $('idleText').textContent = 'Todas as perguntas já saíram. Embaralhando de novo.';
+    var rr = rangeOf(tab);
+    if (res.renewed) $('idleText').textContent = tab === 'desafios' ? 'Todos os desafios já saíram. Embaralhando de novo.' : 'Todas as perguntas já saíram. Embaralhando de novo.';
     var elapsed = 0;
     var spin = setInterval(function () {
-      big.textContent = pad(1 + Math.floor(Math.random() * QUESTIONS.length));
+      big.textContent = pad(rr.from + Math.floor(Math.random() * (rr.to - rr.from + 1)));
       elapsed += 70;
       if (elapsed >= 700) {
         clearInterval(spin);
@@ -572,8 +644,15 @@ body[data-mode="fichas"] .draw { display: none; }
     e.preventDefault();
     var raw = $('num').value.trim();
     var n = parseInt(raw, 10);
-    if (!raw || isNaN(n) || n < 1 || n > QUESTIONS.length) {
-      showError('Digite um número de 1 a ' + QUESTIONS.length + '.');
+    var r = rangeOf(tab);
+    if (!raw || isNaN(n) || n < 1 || n > ALL.length) {
+      showError('Digite um número de ' + r.from + ' a ' + r.to + '.');
+      return;
+    }
+    if (n < r.from || n > r.to) {
+      showError(n > QUESTIONS.length
+        ? 'A ficha ' + n + ' é um desafio. Troque para a aba Desafios.'
+        : 'A ficha ' + n + ' é uma pergunta. Troque para a aba Perguntas.');
       return;
     }
     clearError();
@@ -602,13 +681,36 @@ body[data-mode="fichas"] .draw { display: none; }
   });
 
   $('revealBtn').addEventListener('click', function () { finish('manual'); });
+  function setTab(t) {
+    tab = (t === 'desafios') ? 'desafios' : 'perguntas';
+    var ch = tab === 'desafios';
+    var r = rangeOf(tab);
+    document.body.setAttribute('data-tab', tab);
+    Array.prototype.forEach.call(document.querySelectorAll('input[name="tab"]'), function (x) {
+      x.checked = (x.value === tab);
+    });
+    $('sub').textContent = 'Dominó + conhecimentos gerais. ' + (ch ? 'Desafios de ' : 'Fichas de ') + r.from + ' a ' + r.to + '.';
+    $('drawBtn').textContent = ch ? 'Sortear desafio' : 'Sortear pergunta';
+    $('durBox').hidden = ch;
+    $('fixedTime').hidden = !ch;
+    $('fixedTime').textContent = 'Cada desafio tem ' + CHALLENGE_SECONDS + ' segundos.';
+    try { localStorage.setItem('dq-tab', tab); } catch (e) {}
+    clearError();
+    refreshIdleText();
+    updateRemaining();
+  }
+
   $('nextBtn').addEventListener('click', function () {
     if (mode === 'sortear') draw(); else reset();
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('input[name="tab"]'), function (x) {
+    x.addEventListener('change', function () { if (x.checked) setTab(x.value); });
   });
   $('swapBtn').addEventListener('click', reset);
   $('drawBtn').addEventListener('click', draw);
   $('resetDraw').addEventListener('click', function () {
-    used = [];
+    var r = rangeOf(tab);
+    used = used.filter(function (v) { return v < r.from - 1 || v > r.to - 1; });
     saveUsed();
     updateRemaining();
   });
@@ -620,13 +722,14 @@ body[data-mode="fichas"] .draw { display: none; }
     var savedUsed = JSON.parse(localStorage.getItem('dq-used') || '[]');
     if (Array.isArray(savedUsed)) {
       used = savedUsed.filter(function (v, i, a) {
-        return typeof v === 'number' && v >= 0 && v < QUESTIONS.length && a.indexOf(v) === i;
+        return typeof v === 'number' && v >= 0 && v < ALL.length && a.indexOf(v) === i;
       });
     }
     if (localStorage.getItem('dq-mode') === 'sortear') mode = 'sortear';
+    if (localStorage.getItem('dq-tab') === 'desafios') tab = 'desafios';
   } catch (e) {}
   setMode(mode);
-  updateRemaining();
+  setTab(tab);
 })();
 </script>
 </body>
