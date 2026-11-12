@@ -70,17 +70,16 @@ body.playing .lookup, body.playing .settings, body.playing .tip { display: none;
 
 .field-label { display: block; margin-bottom: 8px; font-size: 0.78rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--paper-dim); }
 
-.tabs { display: grid; grid-template-columns: repeat(3, 1fr); border-bottom: 1.5px solid var(--line); }
+.tabs { display: grid; grid-template-columns: repeat(2, 1fr); border-bottom: 1.5px solid var(--line); }
 .tabs label { position: relative; display: block; }
 .tabs input { position: absolute; opacity: 0; width: 1px; height: 1px; }
 .tabs span { display: grid; place-items: center; min-height: 52px; margin-bottom: -1.5px; border-bottom: 4px solid transparent; color: var(--paper-dim); font: 600 1.05rem var(--font-body); cursor: pointer; }
 .tabs input:checked + span { color: var(--paper); border-bottom-color: var(--blue); }
-body[data-tab="desafios"] .tabs input:checked + span { border-bottom-color: var(--red); }
 .tabs input:focus-visible + span { outline: 2px solid var(--paper); outline-offset: -2px; }
 body.playing .tabs, body.playing .draw { display: none; }
 
-body[data-tab="roll"] .lookup { display: none; }
-body:not([data-tab="roll"]) .draw { display: none; }
+body[data-tab="sorteio"] .lookup { display: none; }
+body:not([data-tab="sorteio"]) .draw { display: none; }
 .draw { display: flex; flex-direction: column; gap: 10px; }
 .draw-btn { height: 68px; border: 0; border-radius: 14px; background: var(--blue); color: #ffffff; font: 700 1.2rem var(--font-body); cursor: pointer; }
 .draw-btn:hover { background: var(--blue-hover); }
@@ -114,7 +113,7 @@ body:not([data-tab="roll"]) .draw { display: none; }
 .settings { display: flex; flex-direction: column; gap: 10px; }
 .settings .field-label { margin: 0; }
 .dur-box { display: flex; flex-direction: column; gap: 10px; }
-.fixed-time { margin: 0; padding: 12px 14px; border: 1.5px solid var(--line); border-radius: 12px; color: var(--paper-dim); font-size: 1rem; }
+.fixed-time { margin: 0; color: var(--paper-dim); font-size: 0.9rem; }
 .seg { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
 .seg label { position: relative; display: block; }
 .seg input, .snd input { position: absolute; opacity: 0; width: 1px; height: 1px; }
@@ -199,15 +198,14 @@ body:not([data-tab="roll"]) .draw { display: none; }
     <div class="mark" aria-hidden="true">?</div>
     <div>
       <h1>DominoQuiz</h1>
-      <p id="sub">Dominó + conhecimentos gerais. Fichas de 1 a 50.</p>
+      <p id="sub">Dominó + conhecimentos gerais. Fichas de 1 a 70.</p>
     </div>
     <button type="button" class="swap" id="swapBtn" hidden>Trocar ficha</button>
   </header>
 
   <div class="tabs" role="radiogroup" aria-label="Parte do jogo">
     <label><input type="radio" name="tab" value="fichas" checked><span>Fichas</span></label>
-    <label><input type="radio" name="tab" value="desafios"><span>Desafios</span></label>
-    <label><input type="radio" name="tab" value="roll"><span>Roll</span></label>
+    <label><input type="radio" name="tab" value="sorteio"><span>Sorteio</span></label>
   </div>
 
   <form id="lookup" class="lookup" novalidate>
@@ -220,7 +218,7 @@ body:not([data-tab="roll"]) .draw { display: none; }
   </form>
 
   <div class="draw" id="draw">
-    <button type="button" class="draw-btn" id="drawBtn">Sortear pergunta</button>
+    <button type="button" class="draw-btn" id="drawBtn">Sortear</button>
     <div class="draw-info">
       <span id="remaining"></span>
       <button type="button" class="link-btn" id="resetDraw">Zerar sorteio</button>
@@ -237,7 +235,7 @@ body:not([data-tab="roll"]) .draw { display: none; }
         <label><input type="radio" name="dur" value="60"><span>60 s</span></label>
       </div>
     </div>
-    <p class="fixed-time" id="fixedTime" hidden></p>
+    <p class="fixed-time" id="fixedTime"></p>
     <label class="snd"><input type="checkbox" id="feedback" checked><span>Som e vibração no fim</span></label>
   </div>
 
@@ -358,8 +356,8 @@ body:not([data-tab="roll"]) .draw { display: none; }
     { cat: "Desafio", q: "Cite 10 países", a: null }
   ];
 
-  /* Roll: perguntas próprias, diferentes das fichas */
-  var ROLL = [
+  /* Sorteio: perguntas próprias (diferentes das fichas), de dificuldade variada, mais desafios simples */
+  var SORT_Q = [
     { cat: "Geografia", q: "Qual é a capital do Brasil?", a: "Brasília" },
     { cat: "Geografia", q: "Qual é a capital do Japão?", a: "Tóquio" },
     { cat: "Geografia", q: "Qual é a capital de Portugal?", a: "Lisboa" },
@@ -401,12 +399,96 @@ body:not([data-tab="roll"]) .draw { display: none; }
     { cat: "Curiosidades", q: "Quantos lados tem um octógono?", a: "8 lados" },
     { cat: "Curiosidades", q: "Qual é a cor da caixa-preta de um avião?", a: "Laranja" },
     { cat: "Curiosidades", q: "Qual é o nome do cachorro do Mickey?", a: "Pluto" },
-    { cat: "Curiosidades", q: "Onde mora o Bob Esponja?", a: "Em um abacaxi, no fundo do mar" }
+    { cat: "Curiosidades", q: "Onde mora o Bob Esponja?", a: "Em um abacaxi, no fundo do mar" },
+
+    { cat: "Geografia", q: "Qual rio atravessa a cidade de Paris?", a: "Rio Sena" },
+    { cat: "Geografia", q: "Qual é o maior lago de água doce do mundo em área?", a: "Lago Superior (América do Norte)" },
+    { cat: "Geografia", q: "Qual é a capital da Turquia?", a: "Ancara" },
+    { cat: "Geografia", q: "Qual é a capital da Suíça?", a: "Berna" },
+    { cat: "Geografia", q: "Qual deserto do Chile é considerado o mais árido do mundo?", a: "Deserto do Atacama" },
+    { cat: "Geografia", q: "Qual estreito separa a Espanha do Marrocos?", a: "Estreito de Gibraltar" },
+    { cat: "Geografia", q: "Qual é o maior país da África em área?", a: "Argélia" },
+    { cat: "Geografia", q: "Qual é o país mais populoso da África?", a: "Nigéria" },
+    { cat: "Geografia", q: "Qual é a capital da Nova Zelândia?", a: "Wellington" },
+    { cat: "Geografia", q: "Qual é o ponto mais alto do Brasil?", a: "Pico da Neblina" },
+    { cat: "Geografia", q: "Como se chama o ponto mais profundo dos oceanos?", a: "Fossa das Marianas" },
+    { cat: "Geografia", q: "Qual é a capital do Canadá?", a: "Ottawa" },
+    { cat: "Ciência", q: "Qual é o símbolo químico da prata?", a: "Ag" },
+    { cat: "Ciência", q: "Qual é o símbolo químico do chumbo?", a: "Pb" },
+    { cat: "Ciência", q: "Qual organela da célula é chamada de “usina de energia”?", a: "Mitocôndria" },
+    { cat: "Ciência", q: "Qual é a velocidade aproximada da luz no vácuo?", a: "Cerca de 300.000 km/s" },
+    { cat: "Ciência", q: "Qual é a unidade de medida de força no Sistema Internacional?", a: "Newton" },
+    { cat: "Ciência", q: "Qual vitamina o corpo produz quando a pele recebe luz do sol?", a: "Vitamina D" },
+    { cat: "Ciência", q: "Qual é o maior órgão interno do corpo humano?", a: "Fígado" },
+    { cat: "Ciência", q: "Quantas câmaras tem o coração humano?", a: "4 câmaras (2 átrios e 2 ventrículos)" },
+    { cat: "Ciência", q: "Qual é o gás mais abundante na atmosfera de Marte?", a: "Dióxido de carbono" },
+    { cat: "Ciência", q: "Qual cientista propôs a teoria da evolução por seleção natural?", a: "Charles Darwin" },
+    { cat: "Ciência", q: "Qual camada da atmosfera filtra grande parte dos raios ultravioleta?", a: "Camada de ozônio" },
+    { cat: "História", q: "Quem foi o primeiro ser humano a viajar ao espaço?", a: "Yuri Gagarin" },
+    { cat: "História", q: "Em que ano foi proclamada a República no Brasil?", a: "1889" },
+    { cat: "História", q: "Qual cidade romana foi soterrada pela erupção do Vesúvio em 79 d.C.?", a: "Pompeia" },
+    { cat: "História", q: "Qual foi a primeira capital do Brasil?", a: "Salvador" },
+    { cat: "História", q: "Qual presidente inaugurou Brasília, em 1960?", a: "Juscelino Kubitschek" },
+    { cat: "História", q: "Qual missão espacial levou o primeiro homem à Lua?", a: "Apollo 11" },
+    { cat: "História", q: "Qual guerra dividiu a Península Coreana entre 1950 e 1953?", a: "Guerra da Coreia" },
+    { cat: "História", q: "Qual evento de 14 de julho de 1789 marca o início da Revolução Francesa?", a: "A tomada da Bastilha" },
+    { cat: "História", q: "Qual tratado, assinado em 1494, dividiu as terras do Novo Mundo entre Portugal e Espanha?", a: "Tratado de Tordesilhas" },
+    { cat: "História", q: "Em que ano a família real portuguesa chegou ao Brasil?", a: "1808" },
+    { cat: "História", q: "Quem liderou a Revolução Cubana, vitoriosa em 1959?", a: "Fidel Castro" },
+    { cat: "Arte", q: "Quem escreveu “Memórias Póstumas de Brás Cubas”?", a: "Machado de Assis" },
+    { cat: "Arte", q: "Quem escreveu “1984”?", a: "George Orwell" },
+    { cat: "Arte", q: "Quem escreveu “Cem Anos de Solidão”?", a: "Gabriel García Márquez" },
+    { cat: "Arte", q: "Qual pintor holandês criou “A Moça com Brinco de Pérola”?", a: "Johannes Vermeer" },
+    { cat: "Arte", q: "Qual artista surrealista pintou “A Persistência da Memória”?", a: "Salvador Dalí" },
+    { cat: "Arte", q: "Quem compôs a ópera “A Flauta Mágica”?", a: "Wolfgang Amadeus Mozart" },
+    { cat: "Arte", q: "Quem escreveu “Crime e Castigo”?", a: "Fiódor Dostoiévski" },
+    { cat: "Arte", q: "Quem escreveu “Os Lusíadas”?", a: "Luís de Camões" },
+    { cat: "Arte", q: "Qual pintora mexicana ficou famosa por seus autorretratos?", a: "Frida Kahlo" },
+    { cat: "Arte", q: "Qual arquiteto brasileiro projetou os principais prédios de Brasília?", a: "Oscar Niemeyer" },
+    { cat: "Esportes", q: "Qual país sediou a primeira Copa do Mundo, em 1930?", a: "Uruguai" },
+    { cat: "Esportes", q: "Qual país venceu a Copa do Mundo masculina de 2010?", a: "Espanha" },
+    { cat: "Esportes", q: "Qual cidade sediou as Olimpíadas de 2012?", a: "Londres" },
+    { cat: "Esportes", q: "Qual piloto brasileiro foi tricampeão de Fórmula 1 e morreu em 1994?", a: "Ayrton Senna" },
+    { cat: "Esportes", q: "Qual país é o berço do judô?", a: "Japão" },
+    { cat: "Esportes", q: "Quantas vezes o Brasil foi campeão da Copa do Mundo masculina até 2022?", a: "5 vezes" },
+    { cat: "Curiosidades", q: "Qual é a ave mais rápida do mundo em mergulho?", a: "Falcão-peregrino" },
+    { cat: "Curiosidades", q: "Qual alimento produzido pelas abelhas é famoso por não estragar?", a: "Mel" },
+    { cat: "Curiosidades", q: "Qual é o menor país do mundo em área?", a: "Vaticano" },
+    { cat: "Curiosidades", q: "Como se chama um período de 5 anos?", a: "Lustro" },
+    { cat: "Curiosidades", q: "Qual é o nome da fobia de altura?", a: "Acrofobia" },
+    { cat: "Curiosidades", q: "Qual é o maior recife de coral do mundo?", a: "Grande Barreira de Corais (Austrália)" },
+    { cat: "Curiosidades", q: "Qual é o idioma oficial da Áustria?", a: "Alemão" },
+    { cat: "Curiosidades", q: "Quantas letras tem o alfabeto da língua portuguesa?", a: "26 letras" }
   ];
+
+  /* Desafios simples do sorteio (20 segundos, sem resposta) */
+  var SORT_C = [
+    { cat: "Desafio", q: "Cite 5 animais que começam com a letra “C”", a: null },
+    { cat: "Desafio", q: "Cite 5 cidades brasileiras", a: null },
+    { cat: "Desafio", q: "Cite 5 times de futebol brasileiros", a: null },
+    { cat: "Desafio", q: "Cite 4 frutas cítricas", a: null },
+    { cat: "Desafio", q: "Cite 5 meses do ano que têm 31 dias", a: null },
+    { cat: "Desafio", q: "Cite 6 países da América do Sul", a: null },
+    { cat: "Desafio", q: "Cite 6 instrumentos musicais", a: null },
+    { cat: "Desafio", q: "Cite 6 legumes ou verduras", a: null },
+    { cat: "Desafio", q: "Cite 5 cantores ou bandas brasileiras", a: null },
+    { cat: "Desafio", q: "Cite 5 filmes de animação", a: null },
+    { cat: "Desafio", q: "Cite 5 sobremesas", a: null },
+    { cat: "Desafio", q: "Cite 5 partes de um carro", a: null },
+    { cat: "Desafio", q: "Cite 6 aves", a: null },
+    { cat: "Desafio", q: "Cite 4 profissões da área da saúde", a: null },
+    { cat: "Desafio", q: "Cite 6 objetos que existem em uma sala de aula", a: null },
+    { cat: "Desafio", q: "Fale 6 palavras que terminam com “ão”", a: null },
+    { cat: "Desafio", q: "Cite 5 planetas do sistema solar", a: null },
+    { cat: "Desafio", q: "Soletre a palavra:\nexceção", a: null },
+    { cat: "Desafio", q: "Soletre a palavra:\nparalelepípedo", a: null },
+    { cat: "Desafio", q: "Soletre a palavra:\nbeneficência", a: null }
+  ];
+  var POOL = SORT_Q.concat(SORT_C);
 
   var ALL = QUESTIONS.concat(CHALLENGES);
   var CHALLENGE_SECONDS = 20;
-  var TABS = ['fichas', 'desafios', 'roll'];
+  var TABS = ['fichas', 'sorteio'];
 
   var $ = function (id) { return document.getElementById(id); };
   var duration = 30;
@@ -553,8 +635,8 @@ body:not([data-tab="roll"]) .draw { display: none; }
     $('revealBtn').textContent = item.a === null ? 'Encerrar' : 'Mostrar resposta';
     $('nextBtn').hidden = true;
     $('swapBtn').hidden = false;
-    $('swapBtn').textContent = tab === 'roll' ? 'Voltar' : 'Trocar ficha';
-    $('nextBtn').textContent = tab === 'roll' ? 'Sortear outra' : 'Nova ficha';
+    $('swapBtn').textContent = tab === 'sorteio' ? 'Voltar' : 'Trocar ficha';
+    $('nextBtn').textContent = tab === 'sorteio' ? 'Sortear outra' : 'Nova ficha';
     setPlaying(true);
     keepAwake(true);
     $('live').textContent = label + ', ' + item.cat + '. ' + item.q;
@@ -565,29 +647,18 @@ body:not([data-tab="roll"]) .draw { display: none; }
 
   function openCard(n) { openItem(ALL[n - 1], 'Ficha ' + pad(n)); }
 
-  function rangeOf(t) {
-    return t === 'desafios' ? { from: QUESTIONS.length + 1, to: ALL.length } : { from: 1, to: QUESTIONS.length };
-  }
-
   function refreshIdleText() {
-    var r = rangeOf(tab);
-    var text;
-    if (tab === 'roll') {
-      text = 'Toque em Sortear pergunta para tirar uma ao acaso. Nenhuma se repete até acabarem.';
-    } else if (tab === 'desafios') {
-      text = 'Digite o número do desafio (' + r.from + ' a ' + r.to + '). O tempo começa na hora e são ' + CHALLENGE_SECONDS + ' segundos.';
-    } else {
-      text = 'Digite o número que está na ficha para ver a pergunta. O tempo começa na hora.';
-    }
-    $('idleText').textContent = text;
+    $('idleText').textContent = tab === 'sorteio'
+      ? 'Toque em Sortear para tirar uma pergunta ou um desafio ao acaso. Nenhum se repete até acabarem.'
+      : 'Digite o número da ficha (1 a ' + ALL.length + '). As fichas ' + (QUESTIONS.length + 1) + ' a ' + ALL.length + ' são desafios.';
   }
 
   function updateRemaining() {
-    $('remaining').textContent = 'Restam ' + (ROLL.length - used.length) + ' de ' + ROLL.length + ' perguntas';
+    $('remaining').textContent = 'Restam ' + (POOL.length - used.length) + ' de ' + POOL.length + ' para sortear';
   }
 
   function saveUsed() {
-    try { localStorage.setItem('dq-roll-used', JSON.stringify(used)); } catch (e) {}
+    try { localStorage.setItem('dq-sorteio-used', JSON.stringify(used)); } catch (e) {}
   }
 
   function setTabRadios() {
@@ -598,17 +669,13 @@ body:not([data-tab="roll"]) .draw { display: none; }
 
   function setTab(t) {
     tab = TABS.indexOf(t) > -1 ? t : 'fichas';
-    var r = rangeOf(tab);
     document.body.setAttribute('data-tab', tab);
     setTabRadios();
-    var sub = 'Dominó + conhecimentos gerais. ';
-    if (tab === 'roll') sub += 'Roll com ' + ROLL.length + ' perguntas sorteadas ao acaso.';
-    else if (tab === 'desafios') sub += 'Desafios de ' + r.from + ' a ' + r.to + '.';
-    else sub += 'Fichas de ' + r.from + ' a ' + r.to + '.';
-    $('sub').textContent = sub;
-    $('durBox').hidden = (tab === 'desafios');
-    $('fixedTime').hidden = (tab !== 'desafios');
-    $('fixedTime').textContent = 'Cada desafio tem ' + CHALLENGE_SECONDS + ' segundos.';
+    $('sub').textContent = 'Dominó + conhecimentos gerais. ' + (tab === 'sorteio'
+      ? 'Sorteio com ' + POOL.length + ' perguntas e desafios.'
+      : 'Fichas de 1 a ' + ALL.length + '.');
+    $('fixedTime').textContent = (tab === 'sorteio' ? 'Os desafios sorteados' : 'Os desafios (fichas ' + (QUESTIONS.length + 1) + ' a ' + ALL.length + ')')
+      + ' têm sempre ' + CHALLENGE_SECONDS + ' segundos.';
     try { localStorage.setItem('dq-tab', tab); } catch (e) {}
     clearError();
     refreshIdleText();
@@ -639,18 +706,18 @@ body:not([data-tab="roll"]) .draw { display: none; }
     updateRemaining();
     $('num').value = '';
     window.scrollTo(0, 0);
-    if (tab !== 'roll') $('num').focus();
+    if (tab === 'fichas') $('num').focus();
   }
 
   function pickNext() {
     var pool = [];
     var i;
-    for (i = 0; i < ROLL.length; i++) if (used.indexOf(i) === -1) pool.push(i);
+    for (i = 0; i < POOL.length; i++) if (used.indexOf(i) === -1) pool.push(i);
     var renewed = false;
     if (!pool.length) {
       used = [];
       renewed = true;
-      for (i = 0; i < ROLL.length; i++) pool.push(i);
+      for (i = 0; i < POOL.length; i++) pool.push(i);
     }
     var pick = pool[Math.floor(Math.random() * pool.length)];
     used.push(pick);
@@ -659,7 +726,7 @@ body:not([data-tab="roll"]) .draw { display: none; }
     return { n: pick + 1, renewed: renewed };
   }
 
-  function openRoll(n) { openItem(ROLL[n - 1], 'Roll ' + pad(n)); }
+  function openRoll(n) { openItem(POOL[n - 1], 'Sorteio ' + pad(n)); }
 
   function draw() {
     if (rolling) return;
@@ -672,10 +739,10 @@ body:not([data-tab="roll"]) .draw { display: none; }
     $('drawBtn').disabled = true;
     var big = $('bigMark');
     big.classList.add('rolling');
-    if (res.renewed) $('idleText').textContent = 'Todas as perguntas já saíram. Embaralhando de novo.';
+    if (res.renewed) $('idleText').textContent = 'Tudo já saiu. Embaralhando de novo.';
     var elapsed = 0;
     var spin = setInterval(function () {
-      big.textContent = pad(1 + Math.floor(Math.random() * ROLL.length));
+      big.textContent = pad(1 + Math.floor(Math.random() * POOL.length));
       elapsed += 70;
       if (elapsed >= 700) {
         clearInterval(spin);
@@ -695,15 +762,8 @@ body:not([data-tab="roll"]) .draw { display: none; }
     e.preventDefault();
     var raw = $('num').value.trim();
     var n = parseInt(raw, 10);
-    var r = rangeOf(tab);
     if (!raw || isNaN(n) || n < 1 || n > ALL.length) {
-      showError('Digite um número de ' + r.from + ' a ' + r.to + '.');
-      return;
-    }
-    if (n < r.from || n > r.to) {
-      showError(n > QUESTIONS.length
-        ? 'A ficha ' + n + ' é um desafio. Troque para a aba Desafios.'
-        : 'A ficha ' + n + ' é uma pergunta. Troque para a aba Fichas.');
+      showError('Digite um número de 1 a ' + ALL.length + '.');
       return;
     }
     clearError();
@@ -733,7 +793,7 @@ body:not([data-tab="roll"]) .draw { display: none; }
 
   $('revealBtn').addEventListener('click', function () { finish('manual'); });
   $('nextBtn').addEventListener('click', function () {
-    if (tab === 'roll') draw(); else reset();
+    if (tab === 'sorteio') draw(); else reset();
   });
   $('swapBtn').addEventListener('click', reset);
   $('drawBtn').addEventListener('click', draw);
@@ -750,13 +810,14 @@ body:not([data-tab="roll"]) .draw { display: none; }
   });
 
   try {
-    var savedUsed = JSON.parse(localStorage.getItem('dq-roll-used') || '[]');
+    var savedUsed = JSON.parse(localStorage.getItem('dq-sorteio-used') || '[]');
     if (Array.isArray(savedUsed)) {
       used = savedUsed.filter(function (v, i, a) {
-        return typeof v === 'number' && v >= 0 && v < ROLL.length && a.indexOf(v) === i;
+        return typeof v === 'number' && v >= 0 && v < POOL.length && a.indexOf(v) === i;
       });
     }
     var savedTab = localStorage.getItem('dq-tab');
+    if (savedTab === 'roll') savedTab = 'sorteio';
     if (TABS.indexOf(savedTab) > -1) tab = savedTab;
   } catch (e) {}
   setTab(tab);
