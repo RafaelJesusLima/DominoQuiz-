@@ -151,6 +151,8 @@ body:not([data-tab="sorteio"]) .draw { display: none; }
 .digits { font: 700 3.8rem/1 var(--font-mono); font-variant-numeric: tabular-nums; min-width: 2.3ch; text-align: right; }
 .digits small { font-size: 1.2rem; margin-left: 2px; color: var(--paper-ink-2); }
 .digits.low { color: var(--red-deep); }
+.ready-hint { margin: 0; color: var(--paper-ink-2); font-size: 0.95rem; }
+.card.face.ready .digits, .card.face.ready .bar { opacity: 0.55; }
 .bar { height: 12px; border-radius: 999px; background: var(--paper-track); overflow: hidden; }
 .bar i { display: block; height: 100%; width: 100%; background: var(--red); transform-origin: left center; border-radius: 999px; }
 @media (prefers-reduced-motion: no-preference) {
@@ -181,6 +183,7 @@ body:not([data-tab="sorteio"]) .draw { display: none; }
 .btn.solid { background: var(--blue); border-color: var(--blue); color: #ffffff; }
 .btn.solid:hover { background: var(--blue-hover); border-color: var(--blue-hover); }
 .btn.wide { flex: 1.7 1 0; }
+.btn.start { min-height: 64px; font-size: 1.15rem; }
 .btn:focus-visible { outline: 3px solid #ffffff; outline-offset: 2px; }
 .btn:active, .tile button:active { transform: scale(0.98); }
 
@@ -257,6 +260,7 @@ body:not([data-tab="sorteio"]) .draw { display: none; }
         <div class="digits" id="digits" aria-hidden="true"><span id="digitsNum">30</span><small>s</small></div>
         <div class="bar" aria-hidden="true"><i id="barFill"></i></div>
       </div>
+      <p class="ready-hint" id="readyHint" hidden>O tempo só começa quando tocar em Começar.</p>
       <div class="answer" id="answerBox" hidden>
         <p class="answer-label" id="answerLabel">Resposta</p>
         <p class="answer-text" id="answerText"></p>
@@ -264,12 +268,13 @@ body:not([data-tab="sorteio"]) .draw { display: none; }
     </article>
   </section>
 
-  <p class="tip">Quem opera a tela é o jogador da esquerda. Quem responde não olha o celular.</p>
+  <p class="tip">Quem opera a tela é o jogador da esquerda. Quem responde não olha o celular. O tempo só começa quando a pessoa toca em Começar.</p>
   <p class="sr-only" id="live" aria-live="polite"></p>
 </main>
 
 <div class="dock" id="controls" hidden>
   <div class="dock-in">
+    <button type="button" class="btn solid start" id="startBtn" hidden>Começar</button>
     <button type="button" class="btn" id="pauseBtn">Pausar</button>
     <button type="button" class="btn solid wide" id="revealBtn">Mostrar resposta</button>
     <button type="button" class="btn solid" id="nextBtn" hidden>Nova ficha</button>
@@ -619,8 +624,7 @@ body:not([data-tab="sorteio"]) .draw { display: none; }
     stopTimer();
     st.item = item;
     st.total = (item.a === null ? CHALLENGE_SECONDS : duration) * 1000;
-    st.endAt = performance.now() + st.total;
-    st.mode = 'running';
+    st.mode = 'ready';
     $('cardNum').textContent = label;
     $('chipText').textContent = item.cat;
     $('question').textContent = item.q;
@@ -629,9 +633,12 @@ body:not([data-tab="sorteio"]) .draw { display: none; }
     $('idle').hidden = true;
     $('face').hidden = false;
     $('controls').hidden = false;
-    $('pauseBtn').hidden = false;
+    $('startBtn').hidden = false;
+    $('readyHint').hidden = false;
+    $('face').classList.add('ready');
+    $('pauseBtn').hidden = true;
     $('pauseBtn').textContent = 'Pausar';
-    $('revealBtn').hidden = false;
+    $('revealBtn').hidden = true;
     $('revealBtn').textContent = item.a === null ? 'Encerrar' : 'Mostrar resposta';
     $('nextBtn').hidden = true;
     $('swapBtn').hidden = false;
@@ -639,9 +646,22 @@ body:not([data-tab="sorteio"]) .draw { display: none; }
     $('nextBtn').textContent = tab === 'sorteio' ? 'Sortear outra' : 'Nova ficha';
     setPlaying(true);
     keepAwake(true);
-    $('live').textContent = label + ', ' + item.cat + '. ' + item.q;
+    $('live').textContent = label + ', ' + item.cat + '. ' + item.q + ' Toque em Começar para iniciar o tempo.';
     paint(st.total);
     window.scrollTo(0, 0);
+  }
+
+  function startTimer() {
+    if (st.mode !== 'ready') return;
+    unlockAudio();
+    st.endAt = performance.now() + st.total;
+    st.mode = 'running';
+    $('startBtn').hidden = true;
+    $('readyHint').hidden = true;
+    $('face').classList.remove('ready');
+    $('pauseBtn').hidden = false;
+    $('revealBtn').hidden = false;
+    $('live').textContent = 'Tempo iniciado.';
     st.timer = setInterval(tick, 100);
   }
 
@@ -791,6 +811,7 @@ body:not([data-tab="sorteio"]) .draw { display: none; }
     }
   });
 
+  $('startBtn').addEventListener('click', startTimer);
   $('revealBtn').addEventListener('click', function () { finish('manual'); });
   $('nextBtn').addEventListener('click', function () {
     if (tab === 'sorteio') draw(); else reset();
