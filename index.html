@@ -10,7 +10,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@700&display=swap">
 <style>
-/* Layout: phone first, one column. Lookup and settings give way to the ficha while a card is open; the actions sit in a bottom dock within thumb reach. */
+/* Layout: phone first, one column. Three tabs (Fichas, Desafios, Roll). The ficha takes over the screen while a card is open; the actions sit in a bottom dock within thumb reach. */
 :root {
   --ink: #0a0c12;
   --ink-2: #12151f;
@@ -70,20 +70,17 @@ body.playing .lookup, body.playing .settings, body.playing .tip { display: none;
 
 .field-label { display: block; margin-bottom: 8px; font-size: 0.78rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--paper-dim); }
 
-.tabs { display: grid; grid-template-columns: 1fr 1fr; border-bottom: 1.5px solid var(--line); }
+.tabs { display: grid; grid-template-columns: repeat(3, 1fr); border-bottom: 1.5px solid var(--line); }
 .tabs label { position: relative; display: block; }
 .tabs input { position: absolute; opacity: 0; width: 1px; height: 1px; }
 .tabs span { display: grid; place-items: center; min-height: 52px; margin-bottom: -1.5px; border-bottom: 4px solid transparent; color: var(--paper-dim); font: 600 1.05rem var(--font-body); cursor: pointer; }
 .tabs input:checked + span { color: var(--paper); border-bottom-color: var(--blue); }
 body[data-tab="desafios"] .tabs input:checked + span { border-bottom-color: var(--red); }
 .tabs input:focus-visible + span { outline: 2px solid var(--paper); outline-offset: -2px; }
-body.playing .tabs { display: none; }
-.dur-box { display: flex; flex-direction: column; gap: 10px; }
-.fixed-time { margin: 0; padding: 12px 14px; border: 1.5px solid var(--line); border-radius: 12px; color: var(--paper-dim); font-size: 1rem; }
-.modes .seg { grid-template-columns: repeat(2, 1fr); }
-body.playing .modes, body.playing .draw { display: none; }
-body[data-mode="sortear"] .lookup { display: none; }
-body[data-mode="fichas"] .draw { display: none; }
+body.playing .tabs, body.playing .draw { display: none; }
+
+body[data-tab="roll"] .lookup { display: none; }
+body:not([data-tab="roll"]) .draw { display: none; }
 .draw { display: flex; flex-direction: column; gap: 10px; }
 .draw-btn { height: 68px; border: 0; border-radius: 14px; background: var(--blue); color: #ffffff; font: 700 1.2rem var(--font-body); cursor: pointer; }
 .draw-btn:hover { background: var(--blue-hover); }
@@ -116,6 +113,8 @@ body[data-mode="fichas"] .draw { display: none; }
 
 .settings { display: flex; flex-direction: column; gap: 10px; }
 .settings .field-label { margin: 0; }
+.dur-box { display: flex; flex-direction: column; gap: 10px; }
+.fixed-time { margin: 0; padding: 12px 14px; border: 1.5px solid var(--line); border-radius: 12px; color: var(--paper-dim); font-size: 1rem; }
 .seg { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
 .seg label { position: relative; display: block; }
 .seg input, .snd input { position: absolute; opacity: 0; width: 1px; height: 1px; }
@@ -146,10 +145,9 @@ body[data-mode="fichas"] .draw { display: none; }
 .chip i { width: 10px; height: 10px; border-radius: 50%; background: var(--red); }
 .swap { flex: none; border: 0; background: transparent; color: var(--blue-hover); font: 600 0.95rem var(--font-body); padding: 14px 4px; margin: -14px -4px -14px auto; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
 .swap:focus-visible { outline: 3px solid #ffffff; outline-offset: 2px; border-radius: 4px; }
-.question { margin: 0; font: 600 clamp(1.5rem, 6.8vw, 2rem)/1.2 var(--font-display); letter-spacing: -0.01em; text-wrap: balance; overflow-wrap: anywhere; }
-
-.question { white-space: pre-line; }
+.question { margin: 0; font: 600 clamp(1.5rem, 6.8vw, 2rem)/1.2 var(--font-display); letter-spacing: -0.01em; text-wrap: balance; overflow-wrap: anywhere; white-space: pre-line; }
 .question.longword { font-size: clamp(1.15rem, 5.6vw, 1.7rem); }
+
 .timer { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 16px; }
 .digits { font: 700 3.8rem/1 var(--font-mono); font-variant-numeric: tabular-nums; min-width: 2.3ch; text-align: right; }
 .digits small { font-size: 1.2rem; margin-left: 2px; color: var(--paper-ink-2); }
@@ -195,7 +193,7 @@ body[data-mode="fichas"] .draw { display: none; }
 }
 </style>
 </head>
-<body data-mode="fichas" data-tab="perguntas">
+<body data-tab="fichas">
 <main class="app">
   <header class="brand">
     <div class="mark" aria-hidden="true">?</div>
@@ -206,16 +204,10 @@ body[data-mode="fichas"] .draw { display: none; }
     <button type="button" class="swap" id="swapBtn" hidden>Trocar ficha</button>
   </header>
 
-  <div class="tabs" role="radiogroup" aria-label="Tipo de ficha">
-    <label><input type="radio" name="tab" value="perguntas" checked><span>Perguntas</span></label>
+  <div class="tabs" role="radiogroup" aria-label="Parte do jogo">
+    <label><input type="radio" name="tab" value="fichas" checked><span>Fichas</span></label>
     <label><input type="radio" name="tab" value="desafios"><span>Desafios</span></label>
-  </div>
-
-  <div class="modes">
-    <div class="seg" role="radiogroup" aria-label="Modo de jogo">
-      <label><input type="radio" name="mode" value="fichas" checked><span>Com fichas</span></label>
-      <label><input type="radio" name="mode" value="sortear"><span>Sortear</span></label>
-    </div>
+    <label><input type="radio" name="tab" value="roll"><span>Roll</span></label>
   </div>
 
   <form id="lookup" class="lookup" novalidate>
@@ -237,13 +229,13 @@ body[data-mode="fichas"] .draw { display: none; }
 
   <div class="settings" id="settings">
     <div class="dur-box" id="durBox">
-    <span class="field-label" id="durLabel">Tempo para responder</span>
-    <div class="seg" role="radiogroup" aria-labelledby="durLabel">
-      <label><input type="radio" name="dur" value="20"><span>20 s</span></label>
-      <label><input type="radio" name="dur" value="30" checked><span>30 s</span></label>
-      <label><input type="radio" name="dur" value="45"><span>45 s</span></label>
-      <label><input type="radio" name="dur" value="60"><span>60 s</span></label>
-    </div>
+      <span class="field-label" id="durLabel">Tempo para responder</span>
+      <div class="seg" role="radiogroup" aria-labelledby="durLabel">
+        <label><input type="radio" name="dur" value="20"><span>20 s</span></label>
+        <label><input type="radio" name="dur" value="30" checked><span>30 s</span></label>
+        <label><input type="radio" name="dur" value="45"><span>45 s</span></label>
+        <label><input type="radio" name="dur" value="60"><span>60 s</span></label>
+      </div>
     </div>
     <p class="fixed-time" id="fixedTime" hidden></p>
     <label class="snd"><input type="checkbox" id="feedback" checked><span>Som e vibração no fim</span></label>
@@ -288,6 +280,7 @@ body[data-mode="fichas"] .draw { display: none; }
 
 <script>
 (function () {
+  /* Fichas 1 a 50 */
   var QUESTIONS = [
     { cat: "Ciência", q: "Qual o maior órgão do corpo humano?", a: "Pele" },
     { cat: "Ciência", q: "Qual é o maior osso do corpo humano?", a: "Fêmur" },
@@ -341,30 +334,79 @@ body[data-mode="fichas"] .draw { display: none; }
     { cat: "Curiosidades", q: "Qual estrela do Pop falava: “AAAuu”?", a: "Michael Jackson" }
   ];
 
+  /* Desafios 51 a 70 (sem resposta) */
   var CHALLENGES = [
-    { cat: 'Desafio', q: 'Soletre a palavra:\nobrigatoriedade', a: null },
-    { cat: 'Desafio', q: 'Soletre a palavra:\nefervescente', a: null },
-    { cat: 'Desafio', q: 'Soletre a palavra:\ninfraestrutura', a: null },
-    { cat: 'Desafio', q: 'Soletre a palavra:\ninconstitucionalidade', a: null },
-    { cat: 'Desafio', q: 'Cite 7 cores diferentes', a: null },
-    { cat: 'Desafio', q: 'Cite 5 frutas com a inicial “A”', a: null },
-    { cat: 'Desafio', q: 'Cite 5 elementos químicos da tabela periódica', a: null },
-    { cat: 'Desafio', q: 'Cite 10 palavras que começam com a letra “R”', a: null },
-    { cat: 'Desafio', q: 'Cite 5 capitais de países da Europa', a: null },
-    { cat: 'Desafio', q: 'Fale 7 marcas de carro', a: null },
-    { cat: 'Desafio', q: 'Cite 8 países que começam com a letra “M”', a: null },
-    { cat: 'Desafio', q: 'Cite 7 países que começam com a letra “S”', a: null },
-    { cat: 'Desafio', q: 'Cite 10 partes do corpo humano', a: null },
-    { cat: 'Desafio', q: 'Cite 5 estados do Nordeste que começam com a letra “P” ou “A”', a: null },
-    { cat: 'Desafio', q: 'Cite 10 profissões', a: null },
-    { cat: 'Desafio', q: 'Cite os 5 oceanos existentes no mundo', a: null },
-    { cat: 'Desafio', q: 'Fale 8 esportes diferentes', a: null },
-    { cat: 'Desafio', q: 'Fale 8 objetos encontrados em uma cozinha', a: null },
-    { cat: 'Desafio', q: 'Cite 8 animais que vivem na água', a: null },
-    { cat: 'Desafio', q: 'Cite 10 países', a: null }
+    { cat: "Desafio", q: "Soletre a palavra:\nobrigatoriedade", a: null },
+    { cat: "Desafio", q: "Soletre a palavra:\nefervescente", a: null },
+    { cat: "Desafio", q: "Soletre a palavra:\ninfraestrutura", a: null },
+    { cat: "Desafio", q: "Soletre a palavra:\ninconstitucionalidade", a: null },
+    { cat: "Desafio", q: "Cite 7 cores diferentes", a: null },
+    { cat: "Desafio", q: "Cite 5 frutas com a inicial “A”", a: null },
+    { cat: "Desafio", q: "Cite 5 elementos químicos da tabela periódica", a: null },
+    { cat: "Desafio", q: "Cite 10 palavras que começam com a letra “R”", a: null },
+    { cat: "Desafio", q: "Cite 5 capitais de países da Europa", a: null },
+    { cat: "Desafio", q: "Fale 7 marcas de carro", a: null },
+    { cat: "Desafio", q: "Cite 8 países que começam com a letra “M”", a: null },
+    { cat: "Desafio", q: "Cite 7 países que começam com a letra “S”", a: null },
+    { cat: "Desafio", q: "Cite 10 partes do corpo humano", a: null },
+    { cat: "Desafio", q: "Cite 4 estados do Nordeste que começam com a letra “P” ou “A”", a: null },
+    { cat: "Desafio", q: "Cite 10 profissões", a: null },
+    { cat: "Desafio", q: "Cite os 5 oceanos existentes no mundo", a: null },
+    { cat: "Desafio", q: "Fale 8 esportes diferentes", a: null },
+    { cat: "Desafio", q: "Fale 8 objetos encontrados em uma cozinha", a: null },
+    { cat: "Desafio", q: "Cite 8 animais que vivem na água", a: null },
+    { cat: "Desafio", q: "Cite 10 países", a: null }
   ];
+
+  /* Roll: perguntas próprias, diferentes das fichas */
+  var ROLL = [
+    { cat: "Geografia", q: "Qual é a capital do Brasil?", a: "Brasília" },
+    { cat: "Geografia", q: "Qual é a capital do Japão?", a: "Tóquio" },
+    { cat: "Geografia", q: "Qual é a capital de Portugal?", a: "Lisboa" },
+    { cat: "Geografia", q: "Qual é o maior estado do Brasil em área?", a: "Amazonas" },
+    { cat: "Geografia", q: "Qual é o menor estado do Brasil em área?", a: "Sergipe" },
+    { cat: "Geografia", q: "Em qual país fica o Taj Mahal?", a: "Índia" },
+    { cat: "Geografia", q: "Qual cordilheira percorre a costa oeste da América do Sul?", a: "Cordilheira dos Andes" },
+    { cat: "Geografia", q: "Qual é a capital do México?", a: "Cidade do México" },
+    { cat: "Geografia", q: "Qual país tem o formato de uma bota?", a: "Itália" },
+    { cat: "Geografia", q: "Qual é a cidade mais populosa do Brasil?", a: "São Paulo" },
+    { cat: "Ciência", q: "Qual é o maior planeta do sistema solar?", a: "Júpiter" },
+    { cat: "Ciência", q: "Qual é o planeta mais próximo do Sol?", a: "Mercúrio" },
+    { cat: "Ciência", q: "Quantos dentes tem um adulto com a dentição completa?", a: "32 dentes" },
+    { cat: "Ciência", q: "Qual é a fórmula química da água?", a: "H₂O" },
+    { cat: "Ciência", q: "Qual é o símbolo químico do ferro?", a: "Fe" },
+    { cat: "Ciência", q: "Quantos cromossomos tem uma célula humana normal?", a: "46 (23 pares)" },
+    { cat: "Ciência", q: "Qual é o metal que é líquido à temperatura ambiente?", a: "Mercúrio" },
+    { cat: "Ciência", q: "Qual é o maior animal do mundo?", a: "Baleia-azul" },
+    { cat: "Ciência", q: "Quantas patas tem uma aranha?", a: "8 patas" },
+    { cat: "Ciência", q: "A que temperatura, em graus Celsius, a água ferve ao nível do mar?", a: "100 °C" },
+    { cat: "História", q: "Quem comandou a frota que chegou ao Brasil em 1500?", a: "Pedro Álvares Cabral" },
+    { cat: "História", q: "Em que ano começou a Primeira Guerra Mundial?", a: "1914" },
+    { cat: "História", q: "Em que ano caiu o Muro de Berlim?", a: "1989" },
+    { cat: "História", q: "Qual imperador francês foi derrotado na Batalha de Waterloo?", a: "Napoleão Bonaparte" },
+    { cat: "História", q: "Qual princesa assinou a Lei Áurea, que aboliu a escravidão no Brasil?", a: "Princesa Isabel" },
+    { cat: "História", q: "Qual navegador chegou à América em 1492?", a: "Cristóvão Colombo" },
+    { cat: "História", q: "Em que ano terminou a Segunda Guerra Mundial?", a: "1945" },
+    { cat: "Arte", q: "Quem escreveu “O Pequeno Príncipe”?", a: "Antoine de Saint-Exupéry" },
+    { cat: "Arte", q: "Quem pintou o quadro “O Grito”?", a: "Edvard Munch" },
+    { cat: "Arte", q: "Quem escreveu “Dom Quixote”?", a: "Miguel de Cervantes" },
+    { cat: "Arte", q: "Quem pintou “Guernica”?", a: "Pablo Picasso" },
+    { cat: "Arte", q: "Quem compôs “As Quatro Estações”?", a: "Antonio Vivaldi" },
+    { cat: "Esportes", q: "Quantos jogadores de cada time ficam em campo numa partida de futebol?", a: "11 jogadores" },
+    { cat: "Esportes", q: "Qual seleção é a maior campeã da Copa do Mundo masculina?", a: "Brasil" },
+    { cat: "Esportes", q: "Quantos anéis tem a bandeira olímpica?", a: "5 anéis" },
+    { cat: "Esportes", q: "Em qual esporte o Michael Phelps ficou famoso?", a: "Natação" },
+    { cat: "Curiosidades", q: "Qual é o único mamífero capaz de voar?", a: "Morcego" },
+    { cat: "Curiosidades", q: "Qual é o menor osso do corpo humano?", a: "Estribo (fica no ouvido)" },
+    { cat: "Curiosidades", q: "Quantos lados tem um octógono?", a: "8 lados" },
+    { cat: "Curiosidades", q: "Qual é a cor da caixa-preta de um avião?", a: "Laranja" },
+    { cat: "Curiosidades", q: "Qual é o nome do cachorro do Mickey?", a: "Pluto" },
+    { cat: "Curiosidades", q: "Onde mora o Bob Esponja?", a: "Em um abacaxi, no fundo do mar" }
+  ];
+
   var ALL = QUESTIONS.concat(CHALLENGES);
   var CHALLENGE_SECONDS = 20;
+  var TABS = ['fichas', 'desafios', 'roll'];
 
   var $ = function (id) { return document.getElementById(id); };
   var duration = 30;
@@ -375,11 +417,10 @@ body[data-mode="fichas"] .draw { display: none; }
     if (localStorage.getItem('dq-feedback') === '0') feedbackOn = false;
   } catch (e) {}
 
-  var st = { mode: 'idle', total: 0, endAt: 0, left: 0, timer: null, idx: 0 };
+  var st = { mode: 'idle', total: 0, endAt: 0, left: 0, timer: null, item: null };
   var actx = null;
   var wake = null;
-  var mode = 'fichas';
-  var tab = 'perguntas';
+  var tab = 'fichas';
   var used = [];
   var rolling = false;
 
@@ -396,6 +437,7 @@ body[data-mode="fichas"] .draw { display: none; }
     try { localStorage.setItem('dq-feedback', feedbackOn ? '1' : '0'); } catch (e) {}
   });
 
+  function pad(n) { return n < 10 ? '0' + n : String(n); }
   function showError(msg) { $('err').textContent = msg; $('err').hidden = false; }
   function clearError() { $('err').hidden = true; }
   function setPlaying(on) { document.body.classList.toggle('playing', on); }
@@ -466,7 +508,7 @@ body[data-mode="fichas"] .draw { display: none; }
 
   function finish(reason) {
     stopTimer();
-    var item = ALL[st.idx];
+    var item = st.item;
     var challenge = item.a === null;
     st.mode = 'done';
     $('digits').classList.remove('low');
@@ -491,14 +533,13 @@ body[data-mode="fichas"] .draw { display: none; }
     window.scrollTo(0, 0);
   }
 
-  function openCard(n) {
+  function openItem(item, label) {
     stopTimer();
-    var item = ALL[n - 1];
-    st.idx = n - 1;
+    st.item = item;
     st.total = (item.a === null ? CHALLENGE_SECONDS : duration) * 1000;
     st.endAt = performance.now() + st.total;
     st.mode = 'running';
-    $('cardNum').textContent = 'Ficha ' + (n < 10 ? '0' + n : n);
+    $('cardNum').textContent = label;
     $('chipText').textContent = item.cat;
     $('question').textContent = item.q;
     $('question').classList.toggle('longword', /\S{16,}/.test(item.q));
@@ -512,56 +553,66 @@ body[data-mode="fichas"] .draw { display: none; }
     $('revealBtn').textContent = item.a === null ? 'Encerrar' : 'Mostrar resposta';
     $('nextBtn').hidden = true;
     $('swapBtn').hidden = false;
-    $('swapBtn').textContent = mode === 'sortear' ? 'Voltar' : 'Trocar ficha';
-    $('nextBtn').textContent = mode === 'sortear' ? 'Sortear outra' : 'Nova ficha';
+    $('swapBtn').textContent = tab === 'roll' ? 'Voltar' : 'Trocar ficha';
+    $('nextBtn').textContent = tab === 'roll' ? 'Sortear outra' : 'Nova ficha';
     setPlaying(true);
     keepAwake(true);
-    $('live').textContent = 'Ficha ' + n + ', ' + item.cat + '. ' + item.q;
+    $('live').textContent = label + ', ' + item.cat + '. ' + item.q;
     paint(st.total);
     window.scrollTo(0, 0);
     st.timer = setInterval(tick, 100);
   }
 
-  function pad(n) { return n < 10 ? '0' + n : String(n); }
+  function openCard(n) { openItem(ALL[n - 1], 'Ficha ' + pad(n)); }
 
   function rangeOf(t) {
     return t === 'desafios' ? { from: QUESTIONS.length + 1, to: ALL.length } : { from: 1, to: QUESTIONS.length };
   }
 
   function refreshIdleText() {
-    var ch = tab === 'desafios';
     var r = rangeOf(tab);
     var text;
-    if (mode === 'sortear') {
-      text = ch ? 'Toque em Sortear desafio para tirar um ao acaso. Nenhum se repete até acabarem.'
-                : 'Toque em Sortear pergunta para tirar uma ao acaso. Nenhuma se repete até acabarem.';
+    if (tab === 'roll') {
+      text = 'Toque em Sortear pergunta para tirar uma ao acaso. Nenhuma se repete até acabarem.';
+    } else if (tab === 'desafios') {
+      text = 'Digite o número do desafio (' + r.from + ' a ' + r.to + '). O tempo começa na hora e são ' + CHALLENGE_SECONDS + ' segundos.';
     } else {
-      text = ch ? 'Digite o número do desafio (' + r.from + ' a ' + r.to + '). O tempo começa na hora e são ' + CHALLENGE_SECONDS + ' segundos.'
-                : 'Digite o número que está na ficha para ver a pergunta. O tempo começa na hora.';
+      text = 'Digite o número que está na ficha para ver a pergunta. O tempo começa na hora.';
     }
     $('idleText').textContent = text;
   }
 
   function updateRemaining() {
-    var r = rangeOf(tab);
-    var total = r.to - r.from + 1;
-    var spent = used.filter(function (v) { return v >= r.from - 1 && v <= r.to - 1; }).length;
-    $('remaining').textContent = 'Restam ' + (total - spent) + ' de ' + total + (tab === 'desafios' ? ' desafios' : ' perguntas');
+    $('remaining').textContent = 'Restam ' + (ROLL.length - used.length) + ' de ' + ROLL.length + ' perguntas';
   }
 
   function saveUsed() {
-    try { localStorage.setItem('dq-used', JSON.stringify(used)); } catch (e) {}
+    try { localStorage.setItem('dq-roll-used', JSON.stringify(used)); } catch (e) {}
   }
 
-  function setMode(m) {
-    mode = (m === 'sortear') ? 'sortear' : 'fichas';
-    document.body.setAttribute('data-mode', mode);
-    Array.prototype.forEach.call(document.querySelectorAll('input[name="mode"]'), function (r) {
-      r.checked = (r.value === mode);
+  function setTabRadios() {
+    Array.prototype.forEach.call(document.querySelectorAll('input[name="tab"]'), function (x) {
+      x.checked = (x.value === tab);
     });
-    try { localStorage.setItem('dq-mode', mode); } catch (e) {}
+  }
+
+  function setTab(t) {
+    tab = TABS.indexOf(t) > -1 ? t : 'fichas';
+    var r = rangeOf(tab);
+    document.body.setAttribute('data-tab', tab);
+    setTabRadios();
+    var sub = 'Dominó + conhecimentos gerais. ';
+    if (tab === 'roll') sub += 'Roll com ' + ROLL.length + ' perguntas sorteadas ao acaso.';
+    else if (tab === 'desafios') sub += 'Desafios de ' + r.from + ' a ' + r.to + '.';
+    else sub += 'Fichas de ' + r.from + ' a ' + r.to + '.';
+    $('sub').textContent = sub;
+    $('durBox').hidden = (tab === 'desafios');
+    $('fixedTime').hidden = (tab !== 'desafios');
+    $('fixedTime').textContent = 'Cada desafio tem ' + CHALLENGE_SECONDS + ' segundos.';
+    try { localStorage.setItem('dq-tab', tab); } catch (e) {}
     clearError();
     refreshIdleText();
+    updateRemaining();
   }
 
   function showIdle() {
@@ -588,19 +639,18 @@ body[data-mode="fichas"] .draw { display: none; }
     updateRemaining();
     $('num').value = '';
     window.scrollTo(0, 0);
-    if (mode === 'fichas') $('num').focus();
+    if (tab !== 'roll') $('num').focus();
   }
 
   function pickNext() {
     var pool = [];
     var i;
-    var r = rangeOf(tab);
-    for (i = r.from - 1; i <= r.to - 1; i++) if (used.indexOf(i) === -1) pool.push(i);
+    for (i = 0; i < ROLL.length; i++) if (used.indexOf(i) === -1) pool.push(i);
     var renewed = false;
     if (!pool.length) {
-      used = used.filter(function (v) { return v < r.from - 1 || v > r.to - 1; });
+      used = [];
       renewed = true;
-      for (i = r.from - 1; i <= r.to - 1; i++) pool.push(i);
+      for (i = 0; i < ROLL.length; i++) pool.push(i);
     }
     var pick = pool[Math.floor(Math.random() * pool.length)];
     used.push(pick);
@@ -609,22 +659,23 @@ body[data-mode="fichas"] .draw { display: none; }
     return { n: pick + 1, renewed: renewed };
   }
 
+  function openRoll(n) { openItem(ROLL[n - 1], 'Roll ' + pad(n)); }
+
   function draw() {
     if (rolling) return;
     unlockAudio();
     var res = pickNext();
     var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (reduce) { openCard(res.n); return; }
+    if (reduce) { openRoll(res.n); return; }
     rolling = true;
     showIdle();
     $('drawBtn').disabled = true;
     var big = $('bigMark');
     big.classList.add('rolling');
-    var rr = rangeOf(tab);
-    if (res.renewed) $('idleText').textContent = tab === 'desafios' ? 'Todos os desafios já saíram. Embaralhando de novo.' : 'Todas as perguntas já saíram. Embaralhando de novo.';
+    if (res.renewed) $('idleText').textContent = 'Todas as perguntas já saíram. Embaralhando de novo.';
     var elapsed = 0;
     var spin = setInterval(function () {
-      big.textContent = pad(rr.from + Math.floor(Math.random() * (rr.to - rr.from + 1)));
+      big.textContent = pad(1 + Math.floor(Math.random() * ROLL.length));
       elapsed += 70;
       if (elapsed >= 700) {
         clearInterval(spin);
@@ -634,7 +685,7 @@ body[data-mode="fichas"] .draw { display: none; }
           $('drawBtn').disabled = false;
           resetBig();
           refreshIdleText();
-          openCard(res.n);
+          openRoll(res.n);
         }, 300);
       }
     }, 70);
@@ -652,7 +703,7 @@ body[data-mode="fichas"] .draw { display: none; }
     if (n < r.from || n > r.to) {
       showError(n > QUESTIONS.length
         ? 'A ficha ' + n + ' é um desafio. Troque para a aba Desafios.'
-        : 'A ficha ' + n + ' é uma pergunta. Troque para a aba Perguntas.');
+        : 'A ficha ' + n + ' é uma pergunta. Troque para a aba Fichas.');
       return;
     }
     clearError();
@@ -681,54 +732,33 @@ body[data-mode="fichas"] .draw { display: none; }
   });
 
   $('revealBtn').addEventListener('click', function () { finish('manual'); });
-  function setTab(t) {
-    tab = (t === 'desafios') ? 'desafios' : 'perguntas';
-    var ch = tab === 'desafios';
-    var r = rangeOf(tab);
-    document.body.setAttribute('data-tab', tab);
-    Array.prototype.forEach.call(document.querySelectorAll('input[name="tab"]'), function (x) {
-      x.checked = (x.value === tab);
-    });
-    $('sub').textContent = 'Dominó + conhecimentos gerais. ' + (ch ? 'Desafios de ' : 'Fichas de ') + r.from + ' a ' + r.to + '.';
-    $('drawBtn').textContent = ch ? 'Sortear desafio' : 'Sortear pergunta';
-    $('durBox').hidden = ch;
-    $('fixedTime').hidden = !ch;
-    $('fixedTime').textContent = 'Cada desafio tem ' + CHALLENGE_SECONDS + ' segundos.';
-    try { localStorage.setItem('dq-tab', tab); } catch (e) {}
-    clearError();
-    refreshIdleText();
-    updateRemaining();
-  }
-
   $('nextBtn').addEventListener('click', function () {
-    if (mode === 'sortear') draw(); else reset();
-  });
-  Array.prototype.forEach.call(document.querySelectorAll('input[name="tab"]'), function (x) {
-    x.addEventListener('change', function () { if (x.checked) setTab(x.value); });
+    if (tab === 'roll') draw(); else reset();
   });
   $('swapBtn').addEventListener('click', reset);
   $('drawBtn').addEventListener('click', draw);
   $('resetDraw').addEventListener('click', function () {
-    var r = rangeOf(tab);
-    used = used.filter(function (v) { return v < r.from - 1 || v > r.to - 1; });
+    used = [];
     saveUsed();
     updateRemaining();
   });
-  Array.prototype.forEach.call(document.querySelectorAll('input[name="mode"]'), function (r) {
-    r.addEventListener('change', function () { if (r.checked) setMode(r.value); });
+  Array.prototype.forEach.call(document.querySelectorAll('input[name="tab"]'), function (x) {
+    x.addEventListener('change', function () {
+      if (rolling) { setTabRadios(); return; }
+      if (x.checked) setTab(x.value);
+    });
   });
 
   try {
-    var savedUsed = JSON.parse(localStorage.getItem('dq-used') || '[]');
+    var savedUsed = JSON.parse(localStorage.getItem('dq-roll-used') || '[]');
     if (Array.isArray(savedUsed)) {
       used = savedUsed.filter(function (v, i, a) {
-        return typeof v === 'number' && v >= 0 && v < ALL.length && a.indexOf(v) === i;
+        return typeof v === 'number' && v >= 0 && v < ROLL.length && a.indexOf(v) === i;
       });
     }
-    if (localStorage.getItem('dq-mode') === 'sortear') mode = 'sortear';
-    if (localStorage.getItem('dq-tab') === 'desafios') tab = 'desafios';
+    var savedTab = localStorage.getItem('dq-tab');
+    if (TABS.indexOf(savedTab) > -1) tab = savedTab;
   } catch (e) {}
-  setMode(mode);
   setTab(tab);
 })();
 </script>
